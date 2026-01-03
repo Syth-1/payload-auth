@@ -42,6 +42,29 @@ type PluginCollectionOverrides = {
   [K in keyof typeof baPluginSlugs]?: (options: { collection: CollectionConfig }) => CollectionConfig
 }
 
+/**
+ * Configuration for a single better-auth instance
+ */
+export interface BetterAuthInstanceConfig {
+  /**
+   * Cookie prefix for this instance
+   * This differentiates cookies between instances
+   * @example 'admin' -> cookies named 'admin_session_token', etc.
+   */
+  cookiePrefix: string
+  /**
+   * Instance-specific better-auth options overrides
+   * These are merged with the base betterAuthOptions
+   */
+  optionOverrides?: Partial<BetterAuthOptions>
+}
+
+/**
+ * Map of instance names to their configurations
+ */
+export type BetterAuthInstancesConfig = Record<string, BetterAuthInstanceConfig>
+
+
 export interface BetterAuthPluginOptions {
   /**
    * Disable the plugin
@@ -345,6 +368,30 @@ export interface BetterAuthPluginOptions {
      */
     collectionOverrides?: (options: { collection: CollectionConfig }) => CollectionConfig
   }
+
+  /**
+   * Configure multiple better-auth instances
+   *
+   * Each instance shares the same database adapter but has different cookie prefixes.
+   * Useful for separating admin auth from user auth.
+   *
+   * When defined:
+   *   - Access via `payload.betterAuth.<instanceName>`
+   *   - e.g., `payload.betterAuth.admin`, `payload.betterAuth.user`
+   *
+   * When NOT defined (default):
+   *   - Single instance mode: `payload.betterAuth`
+   *   - Backward compatible with existing behavior
+   *
+   * @example
+   * ```ts
+   * instances: {
+   *   admin: { cookiePrefix: 'admin' },
+   *   user: { cookiePrefix: 'user' }
+   * }
+   * ```
+   */
+  instances?: BetterAuthInstancesConfig
 }
 
 export type SendAdminInviteEmailFn = (options: {
@@ -368,7 +415,8 @@ export interface BetterAuthPlugin {
   pluginOptions: BetterAuthPluginOptions
 }
 
-export interface PayloadRequestWithBetterAuth<O extends BetterAuthPluginOptions> extends PayloadRequest {
+export interface PayloadRequestWithBetterAuth<O extends BetterAuthPluginOptions>
+  extends PayloadRequest {
   payload: BasePayload & {
     betterAuth: BetterAuthReturn<O>
   }
@@ -409,23 +457,42 @@ type ExtractRoles<O> = O extends { users?: { roles?: infer R } }
   : readonly [typeof defaults.userRole]
 type BaseErrorCodes = typeof BASE_ERROR_CODES
 
-export type BetterAuthReturn<O extends BetterAuthPluginOptions = BetterAuthPluginOptions> = {
+// Single instance return type (extracted from original)
+export type BetterAuthSingleInstance<
+  O extends BetterAuthPluginOptions = BetterAuthPluginOptions
+> = {
   handler: (request: Request) => Promise<Response>
   api: InferAPI<ReturnType<typeof router<ExtractBA<O>>>>['endpoints']
   options: ExtractBA<O>
   $ERROR_CODES: InferPluginErrorCodes<ExtractBA<O>> & BaseErrorCodes
   $context: Promise<AuthContext>
-  $Infer: InferPluginTypes<ExtractBA<O>> extends {
-    Session: any
-  }
+  $Infer: InferPluginTypes<ExtractBA<O>> extends { Session: any }
     ? InferPluginTypes<ExtractBA<O>>
     : {
         Session: {
           session: PrettifyDeep<InferSession<ExtractBA<O>>>
-          user: OverrideRole<PrettifyDeep<InferUser<ExtractBA<O>>>, ExtractRoles<O>>
+          user: OverrideRole<
+            PrettifyDeep<InferUser<ExtractBA<O>>>,
+            ExtractRoles<O>
+          >
         }
       } & InferPluginTypes<ExtractBA<O>>
 }
+
+// Multi-instance map type
+export type BetterAuthMultiInstance<
+  O extends BetterAuthPluginOptions,
+  I extends BetterAuthInstancesConfig
+> = {
+  [K in keyof I]: BetterAuthSingleInstance<O>
+}
+
+// Conditional return type - single vs multi
+export type BetterAuthReturn<
+  O extends BetterAuthPluginOptions = BetterAuthPluginOptions
+> = O['instances'] extends BetterAuthInstancesConfig
+  ? BetterAuthMultiInstance<O, NonNullable<O['instances']>>
+  : BetterAuthSingleInstance<O>
 
 export type BetterAuthFunctionOptions<O extends BetterAuthPluginOptions> = Omit<ExtractBA<O>, 'database' | 'plugins'> & {
   enableDebugLogs?: boolean

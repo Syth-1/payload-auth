@@ -74,9 +74,9 @@ export interface Config {
     twoFactors: TwoFactor;
     passkeys: Passkey;
     apiKeys: ApiKey;
+    organizations: Organization;
     teams: Team;
     teamMembers: TeamMember;
-    organizations: Organization;
     members: Member;
     invitations: Invitation;
     'admin-invitations': AdminInvitation;
@@ -86,7 +86,12 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    users: {
+      account: 'accounts';
+      session: 'sessions';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     sessions: SessionsSelect<false> | SessionsSelect<true>;
@@ -95,9 +100,9 @@ export interface Config {
     twoFactors: TwoFactorsSelect<false> | TwoFactorsSelect<true>;
     passkeys: PasskeysSelect<false> | PasskeysSelect<true>;
     apiKeys: ApiKeysSelect<false> | ApiKeysSelect<true>;
+    organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
     teams: TeamsSelect<false> | TeamsSelect<true>;
     teamMembers: TeamMembersSelect<false> | TeamMembersSelect<true>;
-    organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
     invitations: InvitationsSelect<false> | InvitationsSelect<true>;
     'admin-invitations': AdminInvitationsSelect<false> | AdminInvitationsSelect<true>;
@@ -110,6 +115,7 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
+  fallbackLocale: null;
   globals: {};
   globalsSelect: {};
   locale: null;
@@ -219,6 +225,67 @@ export interface User {
    * The date and time when the ban will expire
    */
   banExpires?: string | null;
+  account?: {
+    docs?: (number | Account)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  session?: {
+    docs?: (number | Session)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+}
+/**
+ * Accounts are used to store user accounts for authentication providers
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accounts".
+ */
+export interface Account {
+  id: number;
+  /**
+   * The id of the account as provided by the SSO or equal to userId for credential accounts
+   */
+  accountId: string;
+  /**
+   * The id of the provider as provided by the SSO
+   */
+  providerId: string;
+  /**
+   * The user that the account belongs to
+   */
+  user: number | User;
+  /**
+   * The access token of the account. Returned by the provider
+   */
+  accessToken?: string | null;
+  /**
+   * The refresh token of the account. Returned by the provider
+   */
+  refreshToken?: string | null;
+  /**
+   * The id token for the account. Returned by the provider
+   */
+  idToken?: string | null;
+  /**
+   * The date and time when the access token will expire
+   */
+  accessTokenExpiresAt?: string | null;
+  /**
+   * The date and time when the refresh token will expire
+   */
+  refreshTokenExpiresAt?: string | null;
+  /**
+   * The scope of the account. Returned by the provider
+   */
+  scope?: string | null;
+  /**
+   * The hashed password of the account. Mainly used for email and password authentication
+   */
+  password?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 /**
  * Sessions are active sessions for users. They are used to authenticate users with a session token
@@ -306,57 +373,6 @@ export interface Team {
    * The organization that the team belongs to.
    */
   organization: number | Organization;
-  createdAt: string;
-  updatedAt: string;
-}
-/**
- * Accounts are used to store user accounts for authentication providers
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "accounts".
- */
-export interface Account {
-  id: number;
-  /**
-   * The id of the account as provided by the SSO or equal to userId for credential accounts
-   */
-  accountId: string;
-  /**
-   * The id of the provider as provided by the SSO
-   */
-  providerId: string;
-  /**
-   * The user that the account belongs to
-   */
-  user: number | User;
-  /**
-   * The access token of the account. Returned by the provider
-   */
-  accessToken?: string | null;
-  /**
-   * The refresh token of the account. Returned by the provider
-   */
-  refreshToken?: string | null;
-  /**
-   * The id token for the account. Returned by the provider
-   */
-  idToken?: string | null;
-  /**
-   * The date and time when the access token will expire
-   */
-  accessTokenExpiresAt?: string | null;
-  /**
-   * The date and time when the refresh token will expire
-   */
-  refreshTokenExpiresAt?: string | null;
-  /**
-   * The scope of the account. Returned by the provider
-   */
-  scope?: string | null;
-  /**
-   * The hashed password of the account. Mainly used for email and password authentication
-   */
-  password?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -607,12 +623,12 @@ export interface Invitation {
    * The date and time when the invitation will expire.
    */
   expiresAt: string;
+  createdAt: string;
   /**
    * The user who invited the user.
    */
   inviter: number | User;
   updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -691,16 +707,16 @@ export interface PayloadLockedDocument {
         value: number | ApiKey;
       } | null)
     | ({
+        relationTo: 'organizations';
+        value: number | Organization;
+      } | null)
+    | ({
         relationTo: 'teams';
         value: number | Team;
       } | null)
     | ({
         relationTo: 'teamMembers';
         value: number | TeamMember;
-      } | null)
-    | ({
-        relationTo: 'organizations';
-        value: number | Organization;
       } | null)
     | ({
         relationTo: 'members';
@@ -782,6 +798,8 @@ export interface UsersSelect<T extends boolean = true> {
   banned?: T;
   banReason?: T;
   banExpires?: T;
+  account?: T;
+  session?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -884,6 +902,18 @@ export interface ApiKeysSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organizations_select".
+ */
+export interface OrganizationsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  logo?: T;
+  createdAt?: T;
+  metadata?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "teams_select".
  */
 export interface TeamsSelect<T extends boolean = true> {
@@ -900,18 +930,6 @@ export interface TeamMembersSelect<T extends boolean = true> {
   team?: T;
   user?: T;
   createdAt?: T;
-  updatedAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "organizations_select".
- */
-export interface OrganizationsSelect<T extends boolean = true> {
-  name?: T;
-  slug?: T;
-  logo?: T;
-  createdAt?: T;
-  metadata?: T;
   updatedAt?: T;
 }
 /**
@@ -936,9 +954,9 @@ export interface InvitationsSelect<T extends boolean = true> {
   team?: T;
   status?: T;
   expiresAt?: T;
+  createdAt?: T;
   inviter?: T;
   updatedAt?: T;
-  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

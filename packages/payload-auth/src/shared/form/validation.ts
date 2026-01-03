@@ -96,8 +96,8 @@ export const createLoginSchema = ({
         if (loginType === 'username') return isValidUsername(val, usernameSettings)
         return isValidEmail(val) || isValidUsername(val, usernameSettings)
       },
-      (val) => {
-        if (!val) return { message: t('validation:required') }
+      { error : ({ input : val}) => {
+        if (!val || typeof val !== 'string') return { message: t('validation:required') }
 
         const isProbablyEmail = val.includes('@') || !canLoginWithUsername
 
@@ -115,7 +115,7 @@ export const createLoginSchema = ({
             : t('authentication:usernameNotValid') || 'Username is not valid'
         }
       }
-    ),
+  }),
     password: passwordField({ t })
   })
 

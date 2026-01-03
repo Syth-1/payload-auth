@@ -90,12 +90,10 @@ export function betterAuthPlugin(pluginOptions: BetterAuthPluginOptions) {
 
     config.onInit = async (payload) => {
       try {
-        // Execute any existing onInit functions first
         if (incomingOnInit) {
           await incomingOnInit(payload)
         }
 
-        // Initialize and set the betterAuth instance
         const auth = initBetterAuth<typeof pluginOptions>({
           payload,
           idType: payload.db.defaultIDType,
@@ -103,10 +101,10 @@ export function betterAuthPlugin(pluginOptions: BetterAuthPluginOptions) {
             ...sanitizedBetterAuthOptions,
             enableDebugLogs: pluginOptions.debug?.enableDebugLogs ?? false,
             plugins: [...(sanitizedBetterAuthOptions.plugins ?? [])]
-          }
+          },
+          instances: pluginOptions.instances // Pass instances config
         })
 
-        // Type-safe extension of payload with betterAuth
         Object.defineProperty(payload, 'betterAuth', {
           value: auth,
           writable: false,

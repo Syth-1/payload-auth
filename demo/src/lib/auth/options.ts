@@ -176,7 +176,12 @@ export const betterAuthPluginOptions = {
       }
     }
   },
-  betterAuthOptions: betterAuthOptions
+  betterAuthOptions: betterAuthOptions,
+  instances: { 
+    "admin" : { 
+      cookiePrefix: "admin"
+    }
+  }
 } satisfies BetterAuthPluginOptions
 
 export type ConstructedBetterAuthPluginOptions = typeof betterAuthPluginOptions

@@ -11,6 +11,8 @@
     "lint": "next lint",
     "dev": "next dev --turbopack",
     "payload": "payload",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "generate:importmap": "payload generate:importmap",
     "build:prod": "payload migrate && pnpm build",
     "prettier:format": "prettier --write . --config prettier.config.cjs"

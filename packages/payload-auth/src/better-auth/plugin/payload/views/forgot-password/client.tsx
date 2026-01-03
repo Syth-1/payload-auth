@@ -26,7 +26,9 @@ export const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({ baseURL, baseP
   const forgotSchema = z.object({
     email: z.string().refine(
       (val) => emailRegex.test(val),
-      (val) => ({ message: val ? t('authentication:emailNotValid') || 'Invalid email' : t('validation:required') })
+      {
+        error : ({ input : val}) => ({ message: val ? t('authentication:emailNotValid') || 'Invalid email' : t('validation:required') })
+      }
     )
   })
 
