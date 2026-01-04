@@ -1,6 +1,6 @@
 {
   "name": "@syth-1/payload-auth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The most powerful authentication solution for Payload CMS",
   "repository": {
     "type": "git",

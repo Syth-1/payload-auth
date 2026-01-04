@@ -1,6 +1,6 @@
 import type { BetterAuthOptions } from 'better-auth/types'
 import { getPayload, SanitizedConfig, type Config } from 'payload'
-import { payloadAdapter } from 'payload-auth/better-auth/adapter'
+import { payloadAdapter } from '../adapter'
 import { getDefaultBetterAuthSchema } from './helpers/get-better-auth-schema'
 import { syncResolvedSchemaWithCollectionMap } from './helpers/sync-resolved-schema-with-collection-map'
 import { applyDisabledDefaultAuthConfig } from './lib/apply-disabled-default-auth-config'

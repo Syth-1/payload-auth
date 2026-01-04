@@ -1,5 +1,5 @@
 import type { BasePayload } from 'payload'
-import { payloadAdapter } from 'payload-auth/better-auth/adapter'
+import { payloadAdapter } from '../../adapter'
 
 type AdapterInstance = ReturnType<typeof payloadAdapter>
 
